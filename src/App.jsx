@@ -1,34 +1,8 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { Loader2, Copy, Check, Image as ImageIcon, Sparkles, AlertCircle, Palette, Box, Lock, Pencil, Move3d, Droplet, Layers, Maximize2, Ban, X, RefreshCw, Home, History, ChevronDown, Shuffle, RotateCcw } from "lucide-react";
 
-// =============================================================
-// AI Agent: Interior/Architecture Render Prompt (2-image)
-// - Ảnh STYLE (reference): chỉ hút phong cách, vật liệu, màu, ánh sáng...
-// - Ảnh MODEL (mô hình/sketch): GIỮ góc nhìn + bố cục không gian.
-// Prompt đầu ra (English) ra lệnh: render theo góc nhìn/layout của
-// ảnh MODEL, áp style của ảnh STYLE.
-//
-// CẬP NHẬT bản này:
-//  - Thêm 8 STYLE PRESET mới (tổng 24), sắp xếp lại theo 6 NHÓM phong cách
-//    để dễ tìm trong grid.
-//  - Đổi theme: nền zinc/slate tối, accent steel-blue dịu (thay gold), nút
-//    active dùng nền PHẲNG cho tinh gọn. Thêm 2 màu chức năng dịu:
-//    pos (sage = "AI được đổi") và neg (terracotta = "khóa theo MODEL").
-//  - Đổi font: Plus Jakarta Sans (sans gọn, hỗ trợ tiếng Việt) thay serif.
-//  - Bố cục lại 3 BƯỚC: (1) Nguồn ảnh & phong cách, (2) Điều khiển render,
-//    (3) Nền tảng & khung hình. Dùng lưới ngang (2 trục cạnh nhau,
-//    platform + aspect cạnh nhau) để giảm chiều dài cuộn.
-//
-// GIỮ NGUYÊN từ bản cũ:
-//  - UploadBox/AnalysisRow định nghĩa NGOÀI component chính -> textarea không
-//    mất focus khi gõ.
-//  - copy() ưu tiên navigator.clipboard, fallback execCommand.
-//  - Toàn bộ logic gọi API, nén ảnh thích ứng, parseJsonLoose, 2 trục độc lập,
-//    ma trận khóa hình học.
-// =============================================================
-
 const PLATFORMS = [
-  { id: "nanobanana", label: "Nano Banana 2, Chat GPT", hint: "" },
+  { id: "nanobanana", label: "Nano Banana 2, ChatGPT", hint: "" },
   { id: "midjourney", label: "Midjourney", hint: "" },
 ];
 
@@ -81,7 +55,7 @@ const NEGATIVE_BY_PLATFORM = {
   nanobanana:
     "people, extra doors, cluttered cables, watermark, text, signature, blurry, low resolution, grainy, oversaturated, cartoonish, 3d render, cgi, bad anatomy, poorly drawn, bad lighting, overexposed, underexposed, draft, amateur photo",
   midjourney:
-    "people, extra doors, cluttered cables, text, watermark",
+    "people, extra doors, cluttered cables, text, watermark, ceiling height",
 };
 
 // Fallback chung khi ô negative rỗng và chưa rõ nền tảng (mặc định Nano Banana).
@@ -138,7 +112,7 @@ const MJ_BLEND_KEYS = [
 // effectivePlatformGuide() thay bằng giá trị thực trước khi gửi cho model.
 const PLATFORM_GUIDE = {
   nanobanana:
-    "an IMAGE EDITING / RESTYLE instruction for Nano Banana 2 (Gemini 3.1 Flash Image), NOT a scene-generation prompt and NOT using --params. Frame it explicitly as editing the MODEL image: open with a direct command such as 'Using the first image (the 3D model) as the exact base, do NOT change the camera angle, perspective, framing, vanishing lines, room proportions, or the position of any walls, windows, doors, or furniture.' Then: 'Only restyle the surfaces and materials — apply the materials, colors, lighting mood and finishing style onto this exact scene.' Compose it as {{ARPHRASE}}. Because Nano Banana has no negative-prompt syntax, convert the avoid-list into positive phrasing woven into the sentence (e.g. keep vertical lines perfectly straight, accurate perspective, clean uncluttered surfaces). Avoid: {{NEG}}. End with: 'Preserve the original composition and geometry precisely; this is a re-render of the same room, only photorealistic and finished.'",
+    "an IMAGE EDITING / RESTYLE instruction for Nano Banana 2 (Gemini 3.1 Flash Image), NOT a scene-generation prompt and NOT using --params. Frame it explicitly as editing the MODEL image: open with a direct command such as 'Using the imported image (the 3D model) as the exact base, do NOT change the camera angle, perspective, framing, vanishing lines, room proportions, or the position of any walls, windows, doors, or furniture.' Then: 'Only restyle the surfaces and materials — apply the materials, colors, lighting mood and finishing style onto this exact scene.' Compose it as {{ARPHRASE}}. Because Nano Banana has no negative-prompt syntax, convert the avoid-list into positive phrasing woven into the sentence (e.g. keep vertical lines perfectly straight, accurate perspective, clean uncluttered surfaces). Avoid: {{NEG}}. End with: 'Preserve the original composition and geometry precisely; this is a re-render of the same room, only photorealistic and finished.'",
   // LƯU Ý: Midjourney KHÔNG dùng key ở đây — effectivePlatformGuide() luôn gọi
   // buildMidjourneyGuide() (hỗ trợ image-reference --iw/--sref) cho nền tảng này.
 };
@@ -840,7 +814,7 @@ export default function InteriorPromptAgent() {
 
     let guide;
     if (geometry === 0) {
-      guide = `an IMAGE EDITING / RESTYLE instruction for Nano Banana 2 (Gemini 3.1 Flash Image), NOT a scene-generation prompt and NOT using --params. Open with: 'Using the first image (the 3D model) as the exact base, do NOT change the camera angle, perspective, framing, vanishing lines, room proportions, ceiling height, wall heights, the overall vertical scale of the room, or the position of any walls, windows, doors, or furniture.' Then state the styling goal: '${styleClause}' ${negNote} Keep the style description focused on materials, palette, lighting and mood only. End with: 'Preserve the original composition and geometry precisely, including the exact ceiling height and vertical proportions; this is a re-render of the same room, only photorealistic and finished.'`;
+      guide = `an IMAGE EDITING / RESTYLE instruction for Nano Banana 2 (Gemini 3.1 Flash Image), NOT a scene-generation prompt and NOT using --params. Open with: 'Using the imported image (the 3D model) as the exact base, do NOT change the camera angle, perspective, framing, vanishing lines, room proportions, ceiling height, wall heights, the overall vertical scale of the room, or the position of any walls, windows, doors, or furniture.' Then state the styling goal: '${styleClause}' ${negNote} Keep the style description focused on materials, palette, lighting and mood only. End with: 'Preserve the original composition and geometry precisely, including the exact ceiling height and vertical proportions; this is a re-render of the same room, only photorealistic and finished.'`;
     } else if (geometry === 3) {
       guide = `a creative image-generation prompt for Nano Banana 2 that uses the MODEL image only as loose inspiration for the type and feel of the space. The exact geometry need not be preserved. ${styleClause} ${negNote} Describe a cohesive, photorealistic interior that reinterprets the space with the target style.`;
     } else {
@@ -848,7 +822,7 @@ export default function InteriorPromptAgent() {
         1: "small decor items and light fixtures (keep the camera, walls, windows, ceiling height, room proportions, and overall composition fixed)",
         2: "furniture pieces, their arrangement, decor and fixtures (keep the camera angle, room proportions, and ceiling height unchanged)",
       }[geometry];
-      guide = `an IMAGE EDITING / RESTYLE instruction for Nano Banana 2 (Gemini 3.1 Flash Image), NOT using --params. Open with: 'Using the first image (the 3D model) as the spatial base, keep its camera angle, perspective, ceiling height, room proportions, and overall composition.' Then specify what may change: 'You may replace ${allowed} so the scene matches the target style.' Styling goal: '${styleClause}' ${negNote} End with: 'Produce a photorealistic, finished render of the same room reinterpreted with the target style, keeping the original ceiling height and vertical proportions, with PBR materials and global illumination.'`;
+      guide = `an IMAGE EDITING / RESTYLE instruction for Nano Banana 2 (Gemini 3.1 Flash Image), NOT using --params. Open with: 'Using the imported image (the 3D model) as the spatial base, keep its camera angle, perspective, ceiling height, room proportions, and overall composition.' Then specify what may change: 'You may replace ${allowed} so the scene matches the target style.' Styling goal: '${styleClause}' ${negNote} End with: 'Produce a photorealistic, finished render of the same room reinterpreted with the target style, keeping the original ceiling height and vertical proportions, with PBR materials and global illumination.'`;
     }
     return fillPlaceholders(guide);
   }
@@ -1841,13 +1815,13 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
                   <span className="whitespace-nowrap" style={{ color: blendMode ? C.onAccent : C.text }}>Trộn {blendMode ? "BẬT" : "tắt"}</span>
                 </button>
               </div>
-              <p className="text-xs mb-3" style={{ color: C.textDim }}>
-                {styleImg
-                  ? "Đã có ảnh STYLE — ảnh được ưu tiên nên preset tạm khóa. Gỡ ảnh STYLE để chọn preset."
-                  : blendMode
-                    ? "Chế độ TRỘN: click chọn phong cách CHÍNH (đậm), rồi click thêm 1 phong cách nữa làm PHỤ (hiện nhạt hơn). Click lại để bỏ."
-                    : "Chưa có ảnh STYLE? Chọn một phong cách dưới đây làm nguồn style."}
-              </p>
+              {(styleImg || blendMode) && (
+                <p className="text-xs mb-3" style={{ color: C.textDim }}>
+                  {styleImg
+                    ? "Đã có ảnh STYLE — ảnh được ưu tiên nên preset tạm khóa. Gỡ ảnh STYLE để chọn preset."
+                    : "Chế độ TRỘN: click chọn phong cách CHÍNH (đậm), rồi click thêm 1 phong cách nữa làm PHỤ (hiện nhạt hơn). Click lại để bỏ."}
+                </p>
+              )}
 
               {styleImg && (
                 <div className="mb-3 flex items-center gap-2 rounded-lg px-3 py-2 text-xs" style={{ background: C.panel2, border: `1px dashed ${C.line}`, color: C.accentSoft }}>
@@ -2258,7 +2232,7 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
             )}
             {!analysis && !prompts && status !== "analyzing" && (
               <div
-                className="rounded-2xl p-8 flex flex-col items-center justify-center text-center min-h-[280px]"
+                className="rounded-2xl p-8 flex flex-col items-center justify-center text-center min-h-[196px]"
                 style={{ background: C.panel, border: `1px dashed ${C.line}` }}
               >
                 <Sparkles className="w-8 h-8 mb-3" style={{ color: C.textFaint }} />
