@@ -1,35 +1,9 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { Loader2, Copy, Check, Image as ImageIcon, Sparkles, AlertCircle, Palette, Box, Lock, Pencil, Move3d, Droplet, Layers, Maximize2, Ban, X, RefreshCw, Home, History, ChevronDown, Shuffle, RotateCcw } from "lucide-react";
 
-// =============================================================
-// AI Agent: Interior/Architecture Render Prompt (2-image)
-// - Ảnh STYLE (reference): chỉ hút phong cách, vật liệu, màu, ánh sáng...
-// - Ảnh MODEL (mô hình/sketch): GIỮ góc nhìn + bố cục không gian.
-// Prompt đầu ra (English) ra lệnh: render theo góc nhìn/layout của
-// ảnh MODEL, áp style của ảnh STYLE.
-//
-// CẬP NHẬT bản này:
-//  - Thêm 8 STYLE PRESET mới (tổng 24), sắp xếp lại theo 6 NHÓM phong cách
-//    để dễ tìm trong grid.
-//  - Đổi theme: nền zinc/slate tối, accent steel-blue dịu (thay gold), nút
-//    active dùng nền PHẲNG cho tinh gọn. Thêm 2 màu chức năng dịu:
-//    pos (sage = "AI được đổi") và neg (terracotta = "khóa theo MODEL").
-//  - Đổi font: Plus Jakarta Sans (sans gọn, hỗ trợ tiếng Việt) thay serif.
-//  - Bố cục lại 3 BƯỚC: (1) Nguồn ảnh & phong cách, (2) Điều khiển render,
-//    (3) Nền tảng & khung hình. Dùng lưới ngang (2 trục cạnh nhau,
-//    platform + aspect cạnh nhau) để giảm chiều dài cuộn.
-//
-// GIỮ NGUYÊN từ bản cũ:
-//  - UploadBox/AnalysisRow định nghĩa NGOÀI component chính -> textarea không
-//    mất focus khi gõ.
-//  - copy() ưu tiên navigator.clipboard, fallback execCommand.
-//  - Toàn bộ logic gọi API, nén ảnh thích ứng, parseJsonLoose, 2 trục độc lập,
-//    ma trận khóa hình học.
-// =============================================================
-
 const PLATFORMS = [
-  { id: "nanobanana", label: "Nano Banana 2", hint: "image-to-image, brief tự nhiên" },
-  { id: "midjourney", label: "Midjourney", hint: "--ar --style raw, --v 7" },
+  { id: "nanobanana", label: "Nano Banana 2, Chat GPT", hint: "" },
+  { id: "midjourney", label: "Midjourney", hint: "" },
 ];
 
 // =============================================================
@@ -415,7 +389,7 @@ const C = {
   neg:       "#cf9a8d", // terracotta dịu — "khóa theo MODEL"
   text:      "#e9ecf1",
   textDim:   "#8b94a3",
-  textFaint: "#5e6675",
+  textFaint: "#767f8e",
 };
 
 // Font sans gọn, hiện đại, hỗ trợ tiếng Việt đầy đủ (dùng cho cả heading).
@@ -452,6 +426,10 @@ function UploadBox({ img, onClick, onDrop, inputRef, onChange, onClear, icon, ti
   return (
     <div
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      aria-label={`Tải lên ${title}`}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
       onDragOver={(e) => e.preventDefault()}
       onDrop={onDrop}
       className="relative cursor-pointer rounded-2xl p-4 flex flex-col items-center justify-center text-center min-h-[168px] transition-all duration-200"
@@ -467,10 +445,11 @@ function UploadBox({ img, onClick, onDrop, inputRef, onChange, onClear, icon, ti
         <button
           onClick={(e) => { e.stopPropagation(); onClear(); }}
           title="Xóa ảnh"
+          aria-label="Xóa ảnh"
           className="absolute top-2 right-2 z-10 inline-flex items-center justify-center w-7 h-7 rounded-full transition-colors"
           style={{ background: `${C.bg}cc`, border: `1px solid ${C.line}`, color: C.text }}
         >
-          <X className="w-4 h-4" />
+          <X className="w-4 h-4" aria-hidden="true" />
         </button>
       )}
       {img ? (
@@ -1371,7 +1350,7 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
   :root{
     --bg:#0b0e13; --panel:#141922; --panel2:#1a212c; --inputBg:#0d1119;
     --line:#28303d; --lineSoft:#202733; --accent:#7aa2c4; --accentSoft:#aac6e0;
-    --pos:#7cba9b; --neg:#cf9a8d; --text:#e9ecf1; --textDim:#8b94a3; --textFaint:#5e6675;
+    --pos:#7cba9b; --neg:#cf9a8d; --text:#e9ecf1; --textDim:#8b94a3; --textFaint:#767f8e;
   }
   *{box-sizing:border-box;}
   body{
@@ -1465,7 +1444,7 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
     ${analysisHtml}
 
     <footer>
-      Xuất từ <strong>Interior Prompt AI Agent</strong> · ${escapeHtml(new Date().toLocaleString("vi-VN"))}<br>
+      Xuất từ <strong>Interior Render Prompt Agent</strong> · ${escapeHtml(new Date().toLocaleString("vi-VN"))}<br>
       Sản phẩm thuộc <a href="https://artius.vn/" target="_blank" rel="noopener noreferrer">CÔNG TY THIẾT KẾ VÀ XÂY DỰNG ARTIUS</a>
     </footer>
   </div>
@@ -1654,18 +1633,18 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
     />
   );
   const titleEl = (
-    <div className="flex items-center gap-3.5 min-w-0">
+    <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 w-full sm:w-auto">
       <div
-        className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+        className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0"
         style={{ background: `linear-gradient(145deg, ${C.accent}, ${C.accentDeep})`, boxShadow: `0 8px 22px -10px ${C.accent}` }}
       >
-        <Sparkles className="w-6 h-6" style={{ color: C.onAccent }} />
+        <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: C.onAccent }} aria-hidden="true" />
       </div>
       <div>
-        <h1 className="text-2xl md:text-3xl leading-none font-extrabold tracking-tight" style={{ color: C.text }}>
+        <h1 className="text-xl sm:text-2xl md:text-3xl leading-none font-extrabold tracking-tight whitespace-nowrap" style={{ color: C.text }}>
           Interior Render <span style={{ color: C.accent }}>Prompt Agent</span>
         </h1>
-        <p className="text-sm mt-1.5" style={{ color: C.textDim }}>Hút style từ ảnh mẫu · giữ góc nhìn theo ảnh mô hình</p>
+        <p className="text-[10px] sm:text-sm mt-1.5 whitespace-nowrap" style={{ color: C.textDim }}>Hút style từ ảnh mẫu · giữ góc nhìn theo ảnh mô hình</p>
       </div>
     </div>
   );
@@ -1680,12 +1659,12 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
     >
       <div className="flex items-center gap-3">
         <div>
-          <div className="text-[9px] uppercase tracking-[0.16em] mb-0.5" style={{ color: C.accentSoft }}>Đã dùng</div>
+          <div className="text-[11px] uppercase tracking-[0.16em] mb-0.5" style={{ color: C.accentSoft }}>Đã dùng</div>
           <div style={{ color: C.text }}>{usedTotal.toLocaleString()}</div>
         </div>
         <div className="w-px self-stretch" style={{ background: C.line }} />
         <div>
-          <div className="text-[9px] uppercase tracking-[0.16em] mb-0.5" style={{ color: C.textDim }}>Dự tính</div>
+          <div className="text-[11px] uppercase tracking-[0.16em] mb-0.5" style={{ color: C.textDim }}>Dự tính</div>
           <div style={{ color: C.textDim }}>~{estTotal.toLocaleString()}</div>
         </div>
       </div>
@@ -1693,7 +1672,7 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
   );
 
   return (
-    <div className="min-h-screen p-4 md:p-8" style={{ background: `radial-gradient(120% 75% at 50% -8%, ${C.bgGrad} 0%, ${C.bg} 55%)`, color: C.text, fontFamily: FONT }}>
+    <div className="min-h-screen p-4 md:p-8 overflow-x-hidden" style={{ background: `radial-gradient(120% 75% at 50% -8%, ${C.bgGrad} 0%, ${C.bg} 55%)`, color: C.text, fontFamily: FONT }}>
       {/* Nạp font sans + mono (Plus Jakarta Sans hỗ trợ tiếng Việt) */}
       <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
@@ -1704,6 +1683,7 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
         @keyframes ipa-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         .ipa-skel { background: linear-gradient(90deg, ${C.panel2} 25%, ${C.line} 37%, ${C.panel2} 63%); background-size: 200% 100%; animation: ipa-shimmer 1.4s ease-in-out infinite; }
         textarea, input, button { font-family: inherit; }
+        *:focus-visible { outline: 2px solid ${C.accent}; outline-offset: 2px; }
       `}</style>
 
       <div className="max-w-6xl mx-auto">
@@ -1718,14 +1698,14 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
 
         {/* ===== Header — MOBILE (<md) : dọc, căn giữa · logo → tiêu đề → badge ===== */}
         <div className="flex md:hidden flex-col items-center gap-3 mb-2 pt-3">
-          {logoEl}
+          <div className="mb-7">{logoEl}</div>
           {titleEl}
           {badgeEl}
         </div>
 
         {/* =====================================================
-            LƯỚI CHÍNH: trái = cấu hình (3 bước), phải = kết quả.
-            Trên md+ chia 2 cột; mobile xếp dọc.
+            BỐ CỤC CHÍNH: 1 cột dọc — cấu hình (các bước) rồi tới kết quả.
+            (Đã bỏ bố cục 2 cột; nay thống nhất 1 cột ở mọi kích thước.)
         ====================================================== */}
         <div className="grid grid-cols-1 gap-6 mt-4 items-start">
 
@@ -1744,7 +1724,7 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
                 onClear={clearStyleImg}
                 icon={<Palette className="w-6 h-6" style={{ color: C.accent }} />}
                 title="Ảnh STYLE"
-                subtitle="Tùy chọn — hoặc dùng preset"
+                subtitle={<>Nạp ảnh để tham chiếu<br />hoặc dùng style preset nhanh</>}
                 active={!!styleImg}
               />
               <UploadBox
@@ -1756,7 +1736,7 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
                 onClear={clearModelImg}
                 icon={<Box className="w-6 h-6" style={{ color: C.textDim }} />}
                 title="Ảnh MODEL"
-                subtitle="Giữ góc nhìn & bố cục"
+                subtitle="Nạp ảnh cần áp style không gian"
                 active={!!modelImg}
               />
             </div>
@@ -1772,10 +1752,9 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
                 <p className="text-xs font-bold uppercase tracking-[0.14em]" style={{ color: C.accentSoft }}>
                   Loại không gian
                 </p>
-                <span className="text-[11px] ml-auto" style={{ color: C.textFaint }}>tùy chọn</span>
               </div>
               <p className="text-xs mb-3" style={{ color: C.textDim }}>
-                Cho Agent biết đây là không gian gì để chọn đúng nội thất, fixture &amp; bố cục — đặc biệt hữu ích khi không có ảnh MODEL hoặc MODEL chỉ là sketch thô. Để trống → AI tự suy từ ảnh.
+                Chọn loại không gian để Agent tạo prompt đúng nội thất, vật liệu &amp; bố cục.
               </p>
 
               <select
@@ -1817,19 +1796,19 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
             >
               <div className="flex items-center gap-2 mb-1">
                 <Layers className="w-4 h-4" style={{ color: C.accent }} />
-                <p className="text-xs font-bold uppercase tracking-[0.14em]" style={{ color: C.accentSoft }}>
+                <p className="text-xs font-bold uppercase tracking-normal sm:tracking-[0.14em] whitespace-nowrap shrink-0" style={{ color: C.accentSoft }}>
                   Style preset nhanh
                 </p>
-                <span className="text-[11px] ml-auto" style={{ color: C.textFaint }}>{STYLE_PRESETS.length} phong cách</span>
+                <span className="text-[11px] ml-auto hidden sm:inline" style={{ color: C.textFaint }}>{STYLE_PRESETS.length} phong cách</span>
                 <button
                   onClick={() => !styleImg && changeBlendMode(!blendMode)}
                   disabled={!!styleImg}
                   title="Bật để TRỘN 2 phong cách: click chọn style chính, rồi click thêm 1 style nữa làm phụ"
-                  className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all"
+                  className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all ml-auto sm:ml-0 shrink-0 whitespace-nowrap"
                   style={{ ...(blendMode ? activeBtn : idleBtn), cursor: styleImg ? "not-allowed" : "pointer", opacity: styleImg ? 0.5 : 1 }}
                 >
                   <Shuffle className="w-3 h-3" style={{ color: blendMode ? C.onAccent : C.accent }} />
-                  <span style={{ color: blendMode ? C.onAccent : C.text }}>Trộn {blendMode ? "BẬT" : "tắt"}</span>
+                  <span className="whitespace-nowrap" style={{ color: blendMode ? C.onAccent : C.text }}>Trộn {blendMode ? "BẬT" : "tắt"}</span>
                 </button>
               </div>
               <p className="text-xs mb-3" style={{ color: C.textDim }}>
@@ -1850,7 +1829,7 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
               {/* Chips gom theo NHÓM. Mỗi nhóm có nhãn nhỏ + grid chip. */}
               {Array.from(new Set(STYLE_PRESETS.map((p) => p.group))).map((grp) => (
                 <div key={grp} className="mb-2.5 last:mb-0">
-                  <p className="text-[10px] uppercase tracking-[0.16em] mb-1.5" style={{ color: C.textFaint }}>{grp}</p>
+                  <p className="text-[11px] uppercase tracking-[0.16em] mb-1.5" style={{ color: C.textFaint }}>{grp}</p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     {STYLE_PRESETS.filter((p) => p.group === grp).map((p) => {
                       const on = stylePreset === p.id && !styleImg;                                  // CHÍNH
@@ -1966,7 +1945,7 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
                     style={{ accentColor: C.accent }}
                   />
                   {platform === "midjourney" && (
-                    <p className="text-[10px] mt-1.5 leading-snug" style={{ color: C.textFaint }}>
+                    <p className="text-[11px] mt-1.5 leading-snug" style={{ color: C.textFaint }}>
                       Midjourney mã hóa tỷ lệ bằng multi-prompt weight:{" "}
                       <span style={{ color: C.accentSoft, fontFamily: MONO }}>
                         {presetName(stylePreset)}::1 {presetName(styleB)}::{mjSecondaryWeight(blendRatio)}
@@ -2002,10 +1981,6 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
                 <p className="text-xs font-bold uppercase tracking-[0.14em] inline-flex items-center gap-1.5 mb-1" style={{ color: C.accentSoft }}>
                   <Move3d className="w-4 h-4" /> Trục 1 · {mjImageRef ? "Image weight (--iw)" : hasModel ? "Khóa hình học" : "Kỷ luật không gian"}
                 </p>
-                <p className="text-xs mb-3" style={{ color: C.textDim }}>
-                  {mjImageRef ? GEOMETRY_LEVELS[geometry]?.descMJ : hasModel ? GEOMETRY_LEVELS[geometry]?.desc : GEOMETRY_LEVELS[geometry]?.descNoModel}
-                </p>
-
                 {mjImageRef ? (
                   <div className="mb-3 flex items-center gap-2 rounded-lg px-3 py-2 text-xs" style={{ background: C.panel2, border: `1px dashed ${C.line}`, color: C.accentSoft }}>
                     <ImageIcon className="w-3.5 h-3.5 shrink-0" />
@@ -2029,16 +2004,20 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
                         style={{ ...(on ? activeBtn : idleBtn), cursor: "pointer" }}
                       >
                         <div className="text-[11px] font-bold" style={{ color: on ? C.onAccent : C.accentSoft }}>{lv.short}</div>
-                        <div className="text-[9px] leading-tight mt-0.5" style={{ color: on ? C.onAccent : C.textDim }}>{lv.label}</div>
+                        <div className="text-[10px] leading-tight mt-0.5" style={{ color: on ? C.onAccent : C.textDim }}>{lv.label}</div>
                       </button>
                     );
                   })}
                 </div>
 
+                <p className="mt-3.5 text-xs leading-relaxed" style={{ color: C.textDim }}>
+                  {mjImageRef ? GEOMETRY_LEVELS[geometry]?.descMJ : hasModel ? GEOMETRY_LEVELS[geometry]?.desc : GEOMETRY_LEVELS[geometry]?.descNoModel}
+                </p>
+
                 {/* Checklist yếu tố khóa/mở theo geometry */}
                 {hasModel && (
                   <div className="mt-3.5">
-                    <p className="text-[10px] uppercase tracking-[0.14em] mb-2" style={{ color: C.textFaint }}>
+                    <p className="text-[11px] uppercase tracking-[0.14em] mb-2" style={{ color: C.textFaint }}>
                       AI được đổi gì về không gian:
                     </p>
                     <div className="grid grid-cols-1 gap-y-1">
@@ -2058,7 +2037,7 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
                         );
                       })}
                     </div>
-                    <div className="flex items-center gap-4 mt-2.5 pt-2.5 text-[10px]" style={{ color: C.textDim, borderTop: `1px dashed ${C.lineSoft}` }}>
+                    <div className="flex items-center gap-4 mt-2.5 pt-2.5 text-[11px]" style={{ color: C.textDim, borderTop: `1px dashed ${C.lineSoft}` }}>
                       <span className="inline-flex items-center gap-1"><Lock className="w-3 h-3" style={{ color: C.neg }} /> Giữ theo MODEL</span>
                       <span className="inline-flex items-center gap-1"><Pencil className="w-3 h-3" style={{ color: C.pos }} /> AI đổi được</span>
                     </div>
@@ -2082,7 +2061,7 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
                         style={on ? activeBtn : idleBtn}
                       >
                         <div className="text-[11px] font-bold" style={{ color: on ? C.onAccent : C.accentSoft }}>{lv.short}</div>
-                        <div className="text-[9px] leading-tight mt-0.5" style={{ color: on ? C.onAccent : C.textDim }}>{lv.label}</div>
+                        <div className="text-[10px] leading-tight mt-0.5" style={{ color: on ? C.onAccent : C.textDim }}>{lv.label}</div>
                       </button>
                     );
                   })}
@@ -2115,7 +2094,7 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
                         style={on ? activeBtn : { background: C.panel2, border: `1px solid ${C.line}` }}
                       >
                         <div className="text-sm font-semibold leading-tight" style={{ color: on ? C.onAccent : C.text }}>{p.label}</div>
-                        <div className="text-[11px]" style={{ color: on ? C.onAccent : C.textDim }}>{p.hint}</div>
+                        {p.hint && <div className="text-[11px]" style={{ color: on ? C.onAccent : C.textDim }}>{p.hint}</div>}
                       </button>
                     );
                   })}
@@ -2172,10 +2151,6 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
                 style={{ background: C.inputBg, border: `1px solid ${C.line}`, color: C.text, fontFamily: MONO, fontSize: "12.5px" }}
                 placeholder={NEGATIVE_BY_PLATFORM[platform] || DEFAULT_NEGATIVE}
               />
-              <p className="text-[11px] mt-2" style={{ color: C.textDim }}>
-                {platform === "midjourney" && "Midjourney: ghép vào cuối dưới dạng --no {{NEG}}"}
-                {platform === "nanobanana" && "Nano Banana không có negative syntax — sẽ chuyển thành câu khẳng định (mô tả điều cần giữ)."}
-              </p>
             </div>
 
             {/* Action — nút nằm CỐ ĐỊNH trong luồng (không sticky), ngay sau
@@ -2388,7 +2363,7 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
                       <div className="flex items-center justify-between mb-2.5">
                         <div>
                           <span className="font-semibold" style={{ color: C.accentSoft }}>{p.label}</span>
-                          <span className="ml-2 text-xs" style={{ color: C.textDim }}>{p.hint}</span>
+                          {p.hint && <span className="ml-2 text-xs" style={{ color: C.textDim }}>{p.hint}</span>}
                         </div>
                         <button
                           onClick={() => copy(p.id, prompts[p.id])}
@@ -2423,7 +2398,7 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
                   <div className="rounded-xl p-3 text-xs leading-snug" style={{ background: C.panel, border: `1px solid ${C.lineSoft}` }}>
                     <div className="flex items-center gap-2 mb-2 font-semibold" style={{ color: C.textDim }}>
                       <History className="w-3.5 h-3.5 shrink-0" />
-                      <span>Lịch sử prompt · {history.length} phiên bản gần nhất (bấm “Tải HTML” để lưu, “Dùng lại” để khôi phục)</span>
+                      <span className="whitespace-nowrap">Lịch sử prompt · {history.length} phiên bản gần nhất<span className="hidden sm:inline"> (bấm “Tải HTML” để lưu, “Dùng lại” để khôi phục)</span></span>
                     </div>
                     <div className="space-y-2">
                       {history.map((h, idx) => {
@@ -2435,19 +2410,19 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
                               <span className="text-[11px] font-semibold" style={{ color: C.accentSoft }}>
                                 {idx === 0 ? "Mới nhất" : `Lần ${history.length - idx}`}
                               </span>
-                              <span className="text-[10px]" style={{ color: C.textFaint }}>· {h.timeLabel}</span>
-                              {histPlatform && <span className="text-[10px]" style={{ color: C.textFaint }}>· {histPlatform}</span>}
+                              <span className="text-[11px]" style={{ color: C.textFaint }}>· {h.timeLabel}</span>
+                              {histPlatform && <span className="text-[11px]" style={{ color: C.textFaint }}>· {histPlatform}</span>}
                               <div className="ml-auto flex items-center gap-1.5">
                                 <button
                                   onClick={() => setExpandedHistory(expanded ? null : h.id)}
-                                  className="text-[10px] rounded px-1.5 py-0.5 transition-colors"
+                                  className="text-[11px] rounded px-1.5 py-0.5 transition-colors"
                                   style={{ border: `1px solid ${C.line}`, color: C.textDim, background: "transparent" }}
                                 >
                                   {expanded ? "Ẩn" : "Xem"}
                                 </button>
                                 <button
                                   onClick={() => downloadHistoryItem(h, idx)}
-                                  className="inline-flex items-center gap-1 text-[10px] rounded px-1.5 py-0.5 transition-colors"
+                                  className="inline-flex items-center gap-1 text-[11px] rounded px-1.5 py-0.5 transition-colors"
                                   style={{ border: `1px solid ${C.accent}`, color: C.accent, background: "transparent" }}
                                   title="Tải phiên bản này dưới dạng HTML"
                                 >
@@ -2455,7 +2430,7 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
                                 </button>
                                 <button
                                   onClick={() => restoreHistory(h)}
-                                  className="inline-flex items-center gap-1 text-[10px] rounded px-1.5 py-0.5 transition-colors"
+                                  className="inline-flex items-center gap-1 text-[11px] rounded px-1.5 py-0.5 transition-colors"
                                   style={{ border: `1px solid ${C.accent}`, color: C.accent, background: "transparent" }}
                                 >
                                   <RotateCcw className="w-3 h-3" /> Dùng lại
@@ -2494,10 +2469,10 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
                                   return (
                                     <div key={pid}>
                                       <div className="flex items-center gap-2 mb-1">
-                                        <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: C.accentSoft }}>Prompt · {platformName(pid)}</span>
+                                        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: C.accentSoft }}>Prompt · {platformName(pid)}</span>
                                         <button
                                           onClick={() => copy(ck, h.prompts[pid])}
-                                          className="ml-auto inline-flex items-center gap-1 text-[10px] rounded px-1.5 py-0.5"
+                                          className="ml-auto inline-flex items-center gap-1 text-[11px] rounded px-1.5 py-0.5"
                                           style={{ border: `1px solid ${copied === ck ? C.pos : C.accent}`, color: copied === ck ? C.pos : C.accent, background: "transparent" }}
                                         >
                                           {copied === ck ? (<><Check className="w-3 h-3" /> Đã copy</>) : (<><Copy className="w-3 h-3" /> Copy</>)}
@@ -2509,7 +2484,7 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
                                 })}
                                 {h.analysis && (
                                   <div>
-                                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: C.accentSoft }}>Phân tích ({Object.keys(h.analysis).length} mục)</span>
+                                    <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: C.accentSoft }}>Phân tích ({Object.keys(h.analysis).length} mục)</span>
                                     <ul className="mt-1 space-y-0.5">
                                       {Object.entries(h.analysis).map(([k, v]) => (
                                         <li key={k} className="flex flex-wrap items-baseline gap-x-1.5 text-[11px]">
@@ -2537,7 +2512,7 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
 
         {/* Footer attribution — bản quyền sản phẩm thuộc về công ty ARTIUS */}
         <p className="mt-10 text-center text-xs leading-relaxed" style={{ color: C.textDim }}>
-          Sản phẩm <strong style={{ color: C.text }}>“Interior Prompt AI Agent”</strong> này thuộc về{" "}
+          Sản phẩm <strong style={{ color: C.text }}>“Interior Render Prompt Agent”</strong><br />thuộc về{" "}
           <a
             href="https://artius.vn/"
             target="_blank"
@@ -2551,7 +2526,7 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
 
         <p className="mt-3 text-center" style={{ color: C.textFaint }}>
           <span
-            className="inline-block rounded-md px-2 py-0.5 text-[10px] tracking-wider"
+            className="inline-block rounded-md px-2 py-0.5 text-[11px] tracking-wider"
             style={{ background: C.panel2, border: `1px solid ${C.line}`, color: C.accentSoft, fontFamily: MONO }}
             title="Dấu mốc phiên bản — nếu vẫn thấy số cũ sau khi mở lại thì bạn đang xem bản cache"
           >
