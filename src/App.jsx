@@ -1,6 +1,32 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { Loader2, Copy, Check, Image as ImageIcon, Sparkles, AlertCircle, Palette, Box, Lock, Pencil, Move3d, Droplet, Layers, Maximize2, Ban, X, RefreshCw, Home, History, ChevronDown, Shuffle, RotateCcw } from "lucide-react";
 
+// =============================================================
+// AI Agent: Interior/Architecture Render Prompt (2-image)
+// - Ảnh STYLE (reference): chỉ hút phong cách, vật liệu, màu, ánh sáng...
+// - Ảnh MODEL (mô hình/sketch): GIỮ góc nhìn + bố cục không gian.
+// Prompt đầu ra (English) ra lệnh: render theo góc nhìn/layout của
+// ảnh MODEL, áp style của ảnh STYLE.
+//
+// CẬP NHẬT bản này:
+//  - Thêm 8 STYLE PRESET mới (tổng 24), sắp xếp lại theo 6 NHÓM phong cách
+//    để dễ tìm trong grid.
+//  - Đổi theme: nền zinc/slate tối, accent steel-blue dịu (thay gold), nút
+//    active dùng nền PHẲNG cho tinh gọn. Thêm 2 màu chức năng dịu:
+//    pos (sage = "AI được đổi") và neg (terracotta = "khóa theo MODEL").
+//  - Đổi font: Plus Jakarta Sans (sans gọn, hỗ trợ tiếng Việt) thay serif.
+//  - Bố cục lại 3 BƯỚC: (1) Nguồn ảnh & phong cách, (2) Điều khiển render,
+//    (3) Nền tảng & khung hình. Dùng lưới ngang (2 trục cạnh nhau,
+//    platform + aspect cạnh nhau) để giảm chiều dài cuộn.
+//
+// GIỮ NGUYÊN từ bản cũ:
+//  - UploadBox/AnalysisRow định nghĩa NGOÀI component chính -> textarea không
+//    mất focus khi gõ.
+//  - copy() ưu tiên navigator.clipboard, fallback execCommand.
+//  - Toàn bộ logic gọi API, nén ảnh thích ứng, parseJsonLoose, 2 trục độc lập,
+//    ma trận khóa hình học.
+// =============================================================
+
 const PLATFORMS = [
   { id: "nanobanana", label: "Nano Banana 2, Chat GPT", hint: "" },
   { id: "midjourney", label: "Midjourney", hint: "" },
@@ -1820,7 +1846,7 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
                   ? "Đã có ảnh STYLE — ảnh được ưu tiên nên preset tạm khóa. Gỡ ảnh STYLE để chọn preset."
                   : blendMode
                     ? "Chế độ TRỘN: click chọn phong cách CHÍNH (đậm), rồi click thêm 1 phong cách nữa làm PHỤ (hiện nhạt hơn). Click lại để bỏ."
-                    }
+                    : "Chưa có ảnh STYLE? Chọn một phong cách dưới đây làm nguồn style."}
               </p>
 
               {styleImg && (
