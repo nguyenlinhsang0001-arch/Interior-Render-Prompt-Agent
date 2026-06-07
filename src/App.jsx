@@ -1820,7 +1820,7 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
                   ? "Đã có ảnh STYLE — ảnh được ưu tiên nên preset tạm khóa. Gỡ ảnh STYLE để chọn preset."
                   : blendMode
                     ? "Chế độ TRỘN: click chọn phong cách CHÍNH (đậm), rồi click thêm 1 phong cách nữa làm PHỤ (hiện nhạt hơn). Click lại để bỏ."
-                    :}
+                    :"Chưa có ảnh STYLE? Chọn một phong cách dưới đây làm nguồn style."}
               </p>
 
               {styleImg && (
