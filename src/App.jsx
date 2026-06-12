@@ -72,8 +72,6 @@ const AR_TO_SIZE = {
 const NEGATIVE_BY_PLATFORM = {
   nanobanana:
     "people, extra doors, cluttered cables, watermark, text, signature, blurry, low resolution, grainy, oversaturated, cartoonish, 3d render, cgi, bad anatomy, poorly drawn, bad lighting, overexposed, underexposed, draft, amateur photo, warped walls, leaning vertical lines, fisheye distortion, lens distortion, curved straight edges, perspective drift",
-  midjourney:
-    "people, extra doors, cluttered cables, text, watermark, ceiling height",
 };
 
 // Fallback chung khi ô negative rỗng và chưa rõ nền tảng (mặc định Nano Banana).
@@ -2331,7 +2329,7 @@ Return ONLY a valid JSON object (no markdown/backticks): {"prompt": "the English
                     {/* Hàng yếu tố — Lock = giữ theo MODEL · Sparkles = AI tạo/đổi */}
                     {GEO_ROWS.map(([key, label]) => (
                       <div key={key} style={{ display: "grid", gridTemplateColumns: "1.7fr repeat(4, 1fr)", borderTop: `1px solid ${C.lineSoft}` }}>
-                        <div className="text-[11px] px-2 py-1.5 flex items-center" style={{ color: C.textDim }}>{label}</div>
+                        <div className="text-[10px] px-2 py-1.5 flex items-center" style={{ color: C.textDim }}>{label}</div>
                         {GEOMETRY_LEVELS.map((lv) => {
                           const locked = isLocked(key, lv.value);
                           const onCol = geometry === lv.value;
